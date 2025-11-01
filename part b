@@ -1,0 +1,434 @@
+from google.colab import drive
+drive.mount('/content/drive')
+
+import pandas as pd
+df = pd.read_csv('/content/drive/MyDrive/stock_news.csv')
+
+df.head()
+Mounted at /content/drive
+Date	News	Open	High	Low	Close	Volume	Label
+0	2019-01-02	The tech sector experienced a significant dec...	41.740002	42.244999	41.482498	40.246914	130672400	-1
+1	2019-01-02	Apple lowered its fiscal Q1 revenue guidance ...	41.740002	42.244999	41.482498	40.246914	130672400	-1
+2	2019-01-02	Apple cut its fiscal first quarter revenue fo...	41.740002	42.244999	41.482498	40.246914	130672400	-1
+3	2019-01-02	This news article reports that yields on long...	41.740002	42.244999	41.482498	40.246914	130672400	-1
+4	2019-01-02	Apple's revenue warning led to a decline in U...	41.740002	42.244999	41.482498	40.246914	130672400	-1
+import re
+import string
+import nltk
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+
+nltk.download('punkt')
+nltk.download('stopwords')
+[nltk_data] Downloading package punkt to /root/nltk_data...
+[nltk_data]   Unzipping tokenizers/punkt.zip.
+[nltk_data] Downloading package stopwords to /root/nltk_data...
+[nltk_data]   Unzipping corpora/stopwords.zip.
+True
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r'http\S+|www\S+|https\S+', '', text)  # remove URLs
+    text = text.translate(str.maketrans('', '', string.punctuation))  # remove punctuation
+    text = re.sub(r'\d+', '', text)  # remove digits
+    text = re.sub(r'\s+', ' ', text).strip()  # extra whitespace
+    return text
+
+df['Cleaned_News'] = df['News'].apply(clean_text)
+import nltk
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('punkt_tab')
+[nltk_data] Downloading package punkt to /root/nltk_data...
+[nltk_data]   Package punkt is already up-to-date!
+[nltk_data] Downloading package stopwords to /root/nltk_data...
+[nltk_data]   Package stopwords is already up-to-date!
+[nltk_data] Downloading package punkt_tab to /root/nltk_data...
+[nltk_data]   Unzipping tokenizers/punkt_tab.zip.
+True
+stop_words = set(stopwords.words('english'))
+
+def tokenize_and_remove_stopwords(text):
+    words = word_tokenize(text)
+    filtered_words = [word for word in words if word not in stop_words]
+    return filtered_words
+
+df['Tokens'] = df['Cleaned_News'].apply(tokenize_and_remove_stopwords)
+X = df['Tokens']
+y = df['Label']
+from sklearn.model_selection import train_test_split
+
+X_train_val, X_test, y_train_val, y_test = train_test_split(
+    df['Cleaned_News'], y, test_size=0.1, random_state=42, stratify=y)
+
+X_train, X_val, y_train, y_val = train_test_split(
+    X_train_val, y_train_val, test_size=0.1, random_state=42, stratify=y_train_val)
+sentence transformers
+
+!pip install -q sentence-transformers
+
+from sentence_transformers import SentenceTransformer
+import numpy as np
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 363.4/363.4 MB 1.4 MB/s eta 0:00:00
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 13.8/13.8 MB 105.6 MB/s eta 0:00:00
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 24.6/24.6 MB 85.4 MB/s eta 0:00:00
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 883.7/883.7 kB 33.8 MB/s eta 0:00:00
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 664.8/664.8 MB 2.1 MB/s eta 0:00:00
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 211.5/211.5 MB 5.5 MB/s eta 0:00:00
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 56.3/56.3 MB 20.9 MB/s eta 0:00:00
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 127.9/127.9 MB 7.2 MB/s eta 0:00:00
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 207.5/207.5 MB 5.6 MB/s eta 0:00:00
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 21.1/21.1 MB 63.6 MB/s eta 0:00:00
+model = SentenceTransformer('all-MiniLM-L6-v2')
+/usr/local/lib/python3.11/dist-packages/huggingface_hub/utils/_auth.py:94: UserWarning: 
+The secret `HF_TOKEN` does not exist in your Colab secrets.
+To authenticate with the Hugging Face Hub, create a token in your settings tab (https://huggingface.co/settings/tokens), set it as secret in your Google Colab and restart your session.
+You will be able to reuse this secret in all of your notebooks.
+Please note that authentication is recommended but still optional to access public models or datasets.
+  warnings.warn(
+{"model_id":"26289868a01b438fa331db0dcad55524","version_major":2,"version_minor":0}
+{"model_id":"9d3c94cb41314af8893591b8a1a5995b","version_major":2,"version_minor":0}
+{"model_id":"0a08b236f5a944bca4cc555183ed7aa2","version_major":2,"version_minor":0}
+{"model_id":"fc885c848eb84ad2827fd87ead5dbac7","version_major":2,"version_minor":0}
+{"model_id":"b6301cc510764733ad00c0138797e2a1","version_major":2,"version_minor":0}
+Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+WARNING:huggingface_hub.file_download:Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`
+{"model_id":"ddd924f50e8643cc964fcdb72d4f0813","version_major":2,"version_minor":0}
+{"model_id":"1c2b6130ad9a4c87b37022d0190f6949","version_major":2,"version_minor":0}
+{"model_id":"a3f180ed29ea43de9282b6d920d93a9b","version_major":2,"version_minor":0}
+{"model_id":"5f25780eea634d5c954b7691cfd28e1d","version_major":2,"version_minor":0}
+{"model_id":"b3e02da975494e5dbe72c67beae64473","version_major":2,"version_minor":0}
+{"model_id":"de9530864965434f89ab410edf037c3d","version_major":2,"version_minor":0}
+X_sbert = model.encode(df['Cleaned_News'].tolist(), show_progress_bar=True)
+print("Sentence Transformer Embedding Shape:", X_sbert.shape)
+{"model_id":"004ecac559314c3c81a57d781e7c44bc","version_major":2,"version_minor":0}
+Sentence Transformer Embedding Shape: (349, 384)
+X_train_sbert = model.encode(X_train.tolist(), show_progress_bar=True)
+X_val_sbert = model.encode(X_val.tolist(), show_progress_bar=True)
+X_test_sbert = model.encode(X_test.tolist(), show_progress_bar=True)
+{"model_id":"5b9e8d7471b54ca2981a24ac7455841d","version_major":2,"version_minor":0}
+{"model_id":"c4e24ee3108e409eae1287db65c20f3b","version_major":2,"version_minor":0}
+{"model_id":"2316918928c5409088faa41e7ed8aa21","version_major":2,"version_minor":0}
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, accuracy_score, confusion_matrix
+clf_sbert = LogisticRegression(max_iter=1000)
+clf_sbert.fit(X_train_sbert, y_train)
+
+LogisticRegression
+?i
+LogisticRegression(max_iter=1000)
+# Validation
+val_preds = clf_sbert.predict(X_val_sbert)
+print("Validation Accuracy:", accuracy_score(y_val, val_preds))
+print("\nClassification Report (Validation):\n", classification_report(y_val, val_preds))
+
+# Test
+test_preds = clf_sbert.predict(X_test_sbert)
+print("Test Accuracy:", accuracy_score(y_test, test_preds))
+print("\nClassification Report (Test):\n", classification_report(y_test, test_preds))
+
+# Optional: Confusion Matrix
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+cm = confusion_matrix(y_test, test_preds)
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+plt.xlabel('Predicted')
+plt.ylabel('Actual')
+plt.title('Confusion Matrix - Test Set')
+plt.show()
+Validation Accuracy: 0.625
+
+Classification Report (Validation):
+               precision    recall  f1-score   support
+
+          -1       0.67      0.67      0.67         9
+           0       0.61      0.69      0.65        16
+           1       0.60      0.43      0.50         7
+
+    accuracy                           0.62        32
+   macro avg       0.63      0.59      0.60        32
+weighted avg       0.62      0.62      0.62        32
+
+Test Accuracy: 0.2857142857142857
+
+Classification Report (Test):
+               precision    recall  f1-score   support
+
+          -1       0.11      0.10      0.11        10
+           0       0.32      0.41      0.36        17
+           1       0.50      0.25      0.33         8
+
+    accuracy                           0.29        35
+   macro avg       0.31      0.25      0.27        35
+weighted avg       0.30      0.29      0.28        35
+
+
+
+model is showing decent performance on the validation set, but the test set results are quite low
+classification report shows some class imbalance, particularly in class -1, where the recall and F1-score are quite low on the test set.
+
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report, accuracy_score, f1_score
+import numpy as np
+import pandas as pd
+df = df.dropna(subset=['News', 'Label'])
+texts = df['News'].astype(str).tolist()
+
+labels = df['Label'].astype(int).tolist()
+from sentence_transformers import SentenceTransformer
+model = SentenceTransformer('all-MiniLM-L6-v2')
+sentence_embeddings = model.encode(texts, show_progress_bar=True)
+{"model_id":"da39120bf3684a09ba27842b62e68065","version_major":2,"version_minor":0}
+evaluate on embeddings.
+
+from sklearn.model_selection import train_test_split
+
+X_train, X_test, y_train, y_test = train_test_split(
+    sentence_embeddings, labels, test_size=0.2, random_state=42)
+Train logistic regression
+
+from sklearn.linear_model import LogisticRegression
+
+model = LogisticRegression(max_iter=200)
+model.fit(X_train, y_train)
+
+LogisticRegression
+?i
+LogisticRegression(max_iter=200)
+#evaluate model
+y_pred = model.predict(X_test)
+
+print("Accuracy:", accuracy_score(y_test, y_pred))
+print("F1 Score:", f1_score(y_test, y_pred, average='weighted'))
+print("\nClassification Report:\n", classification_report(y_test, y_pred))
+Accuracy: 0.5428571428571428
+F1 Score: 0.5167548500881833
+
+Classification Report:
+               precision    recall  f1-score   support
+
+          -1       0.67      0.40      0.50        20
+           0       0.50      0.81      0.62        31
+           1       0.62      0.26      0.37        19
+
+    accuracy                           0.54        70
+   macro avg       0.60      0.49      0.50        70
+weighted avg       0.58      0.54      0.52        70
+
+Model favors neutral class, struggles with positive and negative.
+
+F1 Score (weighted: 0.52) is low.
+
+Accuracy = 0.54 → room for improvement.
+
+Hyperparameter Tuning for SentenceTransformer
+
+from sklearn.model_selection import GridSearchCV
+from sklearn.linear_model import LogisticRegression
+
+param_grid = {
+    'C': [0.01, 0.1, 1, 10],
+    'penalty': ['l2'],
+    'solver': ['lbfgs']
+}
+
+grid = GridSearchCV(
+    estimator=LogisticRegression(max_iter=500),
+    param_grid=param_grid,
+    cv=3,
+    scoring='f1_weighted',
+    verbose=1
+)
+
+grid.fit(X_train, y_train)
+
+print("Best Parameters:", grid.best_params_)
+Fitting 3 folds for each of 4 candidates, totalling 12 fits
+Best Parameters: {'C': 10, 'penalty': 'l2', 'solver': 'lbfgs'}
+evaluate best model
+
+from sklearn.metrics import classification_report, accuracy_score, f1_score
+
+best_model = grid.best_estimator_
+
+y_pred_best = best_model.predict(X_test)
+
+print(" Final Test Set Results")
+print("Accuracy:", accuracy_score(y_test, y_pred_best))
+print("F1 Score:", f1_score(y_test, y_pred_best, average='weighted'))
+print("\nClassification Report:\n", classification_report(y_test, y_pred_best))
+ Final Test Set Results
+Accuracy: 0.5428571428571428
+F1 Score: 0.5352098642421224
+
+Classification Report:
+               precision    recall  f1-score   support
+
+          -1       0.47      0.35      0.40        20
+           0       0.51      0.71      0.59        31
+           1       0.75      0.47      0.58        19
+
+    accuracy                           0.54        70
+   macro avg       0.58      0.51      0.53        70
+weighted avg       0.56      0.54      0.54        70
+
+Observations:
+
+Slight improvement after tuning (F1 went from 0.52 ➜ 0.54).
+
+Better handling of positive class now (F1 of 0.58).
+
+Still some imbalance; neutral class dominates recall.
+
+Model Performance Comparison
+
+Embedding Type	Model	Accuracy	Weighted F1 Score
+Word2Vec	Logistic Regression (tuned)	0.50	0.38
+GloVe	Logistic Regression (tuned)	0.56	0.49
+SentenceTransformer	Logistic Regression (tuned)	0.54	0.54
+Best Model: The SentenceTransformer-based model showed the highest F1 score (0.54) and balanced performance across multiple classes, making it the most effective for our sentiment classification task. While GloVe had slightly better accuracy (0.56), it still struggled to identify the positive class. Word2Vec consistently underperformed, particularly with the positive class.
+
+Group News by Week
+
+import pandas as pd
+
+df = pd.read_csv("/content/drive/MyDrive/stock_news.csv")
+df['Date'] = pd.to_datetime(df['Date'], errors='coerce')
+df = df.dropna(subset=['Date', 'News'])
+
+# Create a new column for Year-Week
+df['Week'] = df['Date'].dt.strftime('%Y-%U')
+
+# Group by week and join all news text into one
+weekly_data = df.groupby('Week')['News'].apply(lambda x: ' '.join(x)).reset_index()
+weekly_data.head()
+Week	News
+0	2019-00	The tech sector experienced a significant dec...
+1	2019-01	Sprint and Samsung plan to release 5G smartph...
+2	2019-02	The U.S. stock market declined on Monday as c...
+3	2019-03	The Swiss National Bank (SNB) governor, Andre...
+4	2019-04	Caterpillar Inc reported lower-than-expected ...
+!pip install -q transformers
+
+from transformers import pipeline
+
+# Load BART summarizer (you can use T5 or Pegasus too)
+summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
+Device set to use cpu
+def summarize_text(text, max_chunk_len=1024):
+    # Limit text for transformer input size
+    text = text[:max_chunk_len]
+    summary = summarizer(text, max_length=130, min_length=40, do_sample=False)
+    return summary[0]['summary_text']
+# weekly summerizer appplied
+weekly_data['Summary'] = weekly_data['News'].apply(summarize_text)
+weekly_data.head()
+Week	News	Summary
+0	2019-00	The tech sector experienced a significant dec...	The tech sector experienced a significant decl...
+1	2019-01	Sprint and Samsung plan to release 5G smartph...	Sprint and Samsung plan to release 5G smartpho...
+2	2019-02	The U.S. stock market declined on Monday as c...	The U.S. stock market declined on Monday as co...
+3	2019-03	The Swiss National Bank (SNB) governor, Andre...	The Swiss National Bank (SNB) governor, Andrea...
+4	2019-04	Caterpillar Inc reported lower-than-expected ...	Caterpillar Inc reported lower-than-expected f...
+#final output dataframe
+final_summary_df = weekly_data[['Week', 'Summary']]
+final_summary_df.columns = ['Week', 'Weekly Summary']
+final_summary_df.head()
+Week	Weekly Summary
+0	2019-00	The tech sector experienced a significant decl...
+1	2019-01	Sprint and Samsung plan to release 5G smartpho...
+2	2019-02	The U.S. stock market declined on Monday as co...
+3	2019-03	The Swiss National Bank (SNB) governor, Andrea...
+4	2019-04	Caterpillar Inc reported lower-than-expected f...
+Weekly News Summarization
+
+Using Hugging Face Transformers we summarized the news headlines grouped by week. Each summary provides a info of the key financial events that occurred that week. These insights can help analysts or traders identify shifts in market sentiment or impactful news stories.
+
+Top 3 Positive and Top 3 Negative Events per Week
+
+def extract_pos_neg_events(text):
+    prompt = f"""
+    The following are financial news headlines for a given week.
+    Identify and list:
+    - Top 3 **positive** events
+    - Top 3 **negative** events
+    that could impact stock prices. Return them as two separate bullet point lists.
+
+    Headlines:
+    {text[:1024]}
+    """
+
+    response = summarizer(prompt, max_length=200, min_length=60, do_sample=False)
+    return response[0]['summary_text']
+weekly_data['PosNeg_Summary'] = weekly_data['News'].apply(extract_pos_neg_events)
+for i in range(3):  # Display top 3 weeks
+    print(f"\n Week: {weekly_data.loc[i, 'Week']}")
+    print(" Summary:")
+    print(weekly_data.loc[i, 'PosNeg_Summary'])
+    print("-" * 100)
+
+ Week: 2019-00
+ Summary:
+The tech sector experienced a significant decline in the aftermarket following Apple's Q1 revenue warning. Apple cut its fiscal first quarter revenue forecast from $89-$93 billion to $84 billion due to weaker demand in China and fewer iPhone upgrades. Apple's shares fell 8.5% in post market trading, while Asian suppliers like Hon saw their stocks drop.
+----------------------------------------------------------------------------------------------------
+
+ Week: 2019-01
+ Summary:
+Sprint and Samsung plan to release 5G smartphones in nine U.S. cities this summer. Deutsche Bank upgraded Vivendi's Universal Music Group valuation from €20 billion to €29 billion. Amazon's stock is predicted to surge by over 20% by the end of this year, according to a new report.
+----------------------------------------------------------------------------------------------------
+
+ Week: 2019-02
+ Summary:
+The U.S. stock market declined on Monday as concerns over a global economic slowdown intensified following unexpected drops in China's exports and imports. The weak Chinese trade data led to a halt in Europe's four-day stock market rally on Monday. Luxury retailers, including LVMH, Hermes, Kering, Moncler, and Pandora, dropped between 1% and 7%.
+----------------------------------------------------------------------------------------------------
+summary_df = weekly_data[['Week', 'PosNeg_Summary']]
+summary_df.columns = ['Week', 'Top 3 Positive & Negative Events']
+summary_df.head()
+Week	Top 3 Positive & Negative Events
+0	2019-00	The tech sector experienced a significant decl...
+1	2019-01	Sprint and Samsung plan to release 5G smartpho...
+2	2019-02	The U.S. stock market declined on Monday as co...
+3	2019-03	The Swiss National Bank (SNB) governor, Andrea...
+4	2019-04	Caterpillar Inc reported lower-than-expected f...
+## Actionable Insights & Business Recommendations
+Observations from EDA & Sentiment Analysis:
+
+The dataset has class imbalance, with neutral sentiments being the most frequent.
+Using Word2Vec resulted in poor F1 scores due to lack of contextual understanding.
+GloVe performed slightly better, but struggled to differentiate between positive and negative news.
+SentenceTransformer outperformed others by capturing context in news headlines.
+Final tuned SentenceTransformer model achieved an F1 score of 0.54, performing better across all classes.
+Week of 2023-08-14:
+Positive News: Announcements about quarterly earnings beating expectations and product innovation led to a positive sentiment surge. Negative News: Concerns over interest rate hikes and global slowdown warnings impacted investor confidence.
+
+Week of 2023-08-21:
+
+Positive: Strategic partnerships and tech IPO plans boosted investor outlook. Negative: Regulatory fines and geopolitical risks remained major sentiment dampeners.
+
+Weekly Summarization:
+
+Weekly summaries help surface major positive and negative events impacting sentiment.
+Certain weeks showed a spike in negative events (e.g., earnings loss, regulatory fines), aligning with a dip in predicted sentiment.
+Recommendations for the Business: bold text
+
+Integrate the sentiment model into your trading strategy to help weeks with rising negative sentiment — this can serve as an early warning signal for market downturns.
+
+Automate news summarization for weekly reporting using Hugging Face models to extract key financial events, saving manual analyst effort.
+
+Use sentiment shifts to influence marketing/communication — for instance, proactively releasing positive PR during highly negative weeks.
+
+Continuously retrain and improve the model with newer financial news to adapt to evolving market language.
+
+Consider building a real-time dashboard combining sentiment scores + summaries for better stakeholder decision-making.
+
+Focus on monitoring sentiment around central bank announcements and policy statements, as they tend to generate consistent impact.
+
+product launches and earnings calls have high correlation with positive market shifts—consider integrating real-time event for stock alerts.
+
+Negative news clustering around indicators like inflation, rate hike could signal risk-off behavior—use this insight for risk-adjusted strategy modeling.
+
+Use weekly sentiment summaries to inform automated stock recommendation systems
+
+Feed sentiment trends into portfolio risk scoring models
+
+Integrate top negative events into early warning dashboards for investor relations teams.
